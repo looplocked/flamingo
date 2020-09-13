@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 #ifdef WIN32
     CConfigFileReader config("../etc/chatserver.conf");
 #else
-    CConfigFileReader config("etc/chatserver.conf");
+    CConfigFileReader config("../etc/chatserver.conf");
 #endif
 
     const char* logbinarypackage = config.getConfigName("logbinarypackage");
