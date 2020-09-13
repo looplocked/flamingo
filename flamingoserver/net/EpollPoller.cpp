@@ -27,6 +27,7 @@ namespace
     const int kDeleted = 2;
 }
 
+// epollfd_在初始化列表中创建
 EPollPoller::EPollPoller(EventLoop* loop)
     :epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
     events_(kInitEventListSize),
@@ -57,35 +58,36 @@ void EPollPoller::assertInLoopThread() const
 
 Timestamp EPollPoller::poll(int timeoutMs, ChannelList* activeChannels)
 {
-    int numEvents = ::epoll_wait(epollfd_,
-        &*events_.begin(),
-        static_cast<int>(events_.size()),
-        timeoutMs);
-    int savedErrno = errno;
-    Timestamp now(Timestamp::now());
-    if (numEvents > 0)
-    {
-        //LOG_TRACE << numEvents << " events happended";
-        fillActiveChannels(numEvents, activeChannels);
-        if (static_cast<size_t>(numEvents) == events_.size())
-        {
-            events_.resize(events_.size() * 2);
-        }
-    }
-    else if (numEvents == 0)
-    {
-        //LOG_TRACE << " nothing happended";
-    }
-    else
-    {
-        // error happens, log uncommon ones
-        if (savedErrno != EINTR)
-        {
-            errno = savedErrno;
-            LOGSYSE("EPollPoller::poll()");
-        }
-    }
-    return now;
+	LOGD("start poll, channel nums is %d, ownerloop is 0x%x", channels_.size(), ownerLoop_);
+	int numEvents = ::epoll_wait(epollfd_,
+		&*events_.begin(),
+		static_cast<int>(events_.size()),
+		timeoutMs);
+	int savedErrno = errno;
+	Timestamp now(Timestamp::now());
+	if (numEvents > 0)
+	{
+		//LOG_TRACE << numEvents << " events happended";
+		fillActiveChannels(numEvents, activeChannels);
+		if (static_cast<size_t>(numEvents) == events_.size())
+		{
+			events_.resize(events_.size() * 2);
+		}
+	}
+	else if (numEvents == 0)
+	{
+		//LOG_TRACE << " nothing happended";
+	}
+	else
+	{
+		// error happens, log uncommon ones
+		if (savedErrno != EINTR)
+		{
+			errno = savedErrno;
+			LOGSYSE("EPollPoller::poll()");
+		}
+	}
+	return now;
 }
 
 void EPollPoller::fillActiveChannels(int numEvents, ChannelList* activeChannels) const
@@ -105,15 +107,15 @@ void EPollPoller::fillActiveChannels(int numEvents, ChannelList* activeChannels)
 
 bool EPollPoller::updateChannel(Channel* channel)
 {
-    assertInLoopThread();
-    LOGD("fd = %d  events = %d", channel->fd(), channel->events());
-    const int index = channel->index();
-    if (index == kNew || index == kDeleted)
-    {
-        // a new one, add with XEPOLL_CTL_ADD
-        int fd = channel->fd();
-        if (index == kNew)
-        {
+	assertInLoopThread();
+	LOGD("EPollPoller::updateChannel in, actual update work is done here, fd = %d  events = %d", channel->fd(), channel->events());
+	const int index = channel->index();
+	if (index == kNew || index == kDeleted)
+	{
+		// a new one, add with XEPOLL_CTL_ADD
+		int fd = channel->fd();
+		if (index == kNew)
+		{          
             //assert(channels_.find(fd) == channels_.end())
             if (channels_.find(fd) != channels_.end())
             {
@@ -139,9 +141,10 @@ bool EPollPoller::updateChannel(Channel* channel)
                 LOGE("current channel is not matched current fd, fd = %d", fd);
                 return false;
             }
-        }
-        channel->set_index(kAdded);
+		}
+		channel->set_index(kAdded);
 
+        LOGD("EPollPoller::updateChannel end, channel count is %d", channels_.size());
         return update(XEPOLL_CTL_ADD, channel);
     }
     else

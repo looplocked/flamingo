@@ -67,7 +67,7 @@ private:
     std::unique_ptr<TcpServer>                     m_server;
     std::list<std::shared_ptr<ChatSession>>        m_sessions;
     std::mutex                                     m_sessionMutex;      //多线程之间保护m_sessions
-    std::atomic_int                                m_sessionId{};
+    std::atomic_int                                m_sessionId{};    //这是初始化？
     std::mutex                                     m_idMutex;           //多线程之间保护m_baseUserId
     std::atomic_bool                               m_logPackageBinary;  //是否日志打印出包的二进制数据
 };

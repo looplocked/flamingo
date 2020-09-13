@@ -17,7 +17,7 @@ Acceptor::Acceptor(EventLoop* loop, const InetAddress& listenAddr, bool reusepor
 #ifndef WIN32
     idleFd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
 #endif
-
+    LOGD("acceptor construct start, create acceptorsocket and acceptchannel, set acceptchannel readcallback as Accept::handleRead, fd is %d", acceptSocket_.fd());
     acceptSocket_.setReuseAddr(true);
     acceptSocket_.setReusePort(reuseport);
     acceptSocket_.bindAddress(listenAddr);
@@ -35,6 +35,7 @@ Acceptor::~Acceptor()
 
 void Acceptor::listen()
 {
+    LOGD("Acceptor::listen in!!");
     loop_->assertInLoopThread();
     listenning_ = true;
     acceptSocket_.listen();
@@ -43,6 +44,7 @@ void Acceptor::listen()
 
 void Acceptor::handleRead()
 {
+    LOGD("Acceptor::handleRead being called!");
     loop_->assertInLoopThread();
     InetAddress peerAddr;
     //FIXME loop until no more
@@ -54,6 +56,7 @@ void Acceptor::handleRead()
         //newConnectionCallback_实际指向TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
         if (newConnectionCallback_)
         {
+            LOGD("Acceptor::newConnectionCallback being called");
             newConnectionCallback_(connfd, peerAddr);
         }
         else

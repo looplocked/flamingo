@@ -1,4 +1,5 @@
 #include "EventLoopThread.h"
+#include "../base/AsyncLog.h"
 #include <functional>
 #include "EventLoop.h"
 
@@ -10,6 +11,7 @@ EventLoopThread::EventLoopThread(const ThreadInitCallback& cb,
 								 exiting_(false),
 								 callback_(cb)
 {
+    LOGD("EventLoopThread contructor!!");
 }
 
 EventLoopThread::~EventLoopThread()
@@ -28,7 +30,7 @@ EventLoop* EventLoopThread::startLoop()
 {
 	//assert(!thread_.started());
 	//thread_.start();
-
+    LOGD("EventLoopThread::startLoop in!!");
 	thread_.reset(new std::thread(std::bind(&EventLoopThread::threadFunc, this)));
 
 	{
@@ -52,6 +54,9 @@ void EventLoopThread::stopLoop()
 
 void EventLoopThread::threadFunc()
 {
+    LOGD("EventLoopThread::threadFunc in!!");
+    // 整个EventLoop,只有构造函数和loop在单独一个线程内运行
+    // 构造函数放在单独线程是为了记住线程号
 	EventLoop loop;
 
 	if (callback_)

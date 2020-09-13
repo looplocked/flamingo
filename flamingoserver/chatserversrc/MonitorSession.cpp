@@ -37,6 +37,7 @@ MonitorSession::MonitorSession(std::shared_ptr<TcpConnection>& conn) : m_tmpConn
 
 void MonitorSession::onRead(const std::shared_ptr<TcpConnection>& conn, Buffer* pBuffer, Timestamp receivTime)
 {
+    LOGD("MonitorSession::OnRead in!!");
     std::string buf;
     std::string substr;
     size_t pos;

@@ -43,30 +43,35 @@ EventLoop::EventLoop()
 {
     createWakeupfd();
 
+    LOGD("EventLoop constructor in!!, wakeupfd is %d", wakeupFd_);
 #ifdef WIN32
     wakeupChannel_.reset(new Channel(this, wakeupFdSend_));
     poller_.reset(new SelectPoller(this));
 
 #else
+    // 创建channel和poller时，将本loop传进去绑定
+    // 将wakeupFd绑定给wakeupchannel
     wakeupChannel_.reset(new Channel(this, wakeupFd_));
     poller_.reset(new EPollPoller(this));
+    LOGD("EventLoop, wakeupfd is %d", wakeupFd_);
 #endif
 
     if (t_loopInThisThread)
-    {
-        LOGF("Another EventLoop  exists in this thread ");
-    }
-    else
-    {
-        t_loopInThisThread = this;
-    }
-    wakeupChannel_->setReadCallback(std::bind(&EventLoop::handleRead, this));
-    // we are always reading the wakeupfd
-    wakeupChannel_->enableReading();
+	{
+		LOGF("Another EventLoop  exists in this thread ");
+	}
+	else
+	{
+		t_loopInThisThread = this;
+	}
+    LOGD("wakeupChannel set readCallback as EventLoop::handleRead");
+	wakeupChannel_->setReadCallback(std::bind(&EventLoop::handleRead, this));
+	// we are always reading the wakeupfd
+	wakeupChannel_->enableReading();
 
-    //std::stringstream ss;	
-    //ss << "eventloop create threadid = " << threadId_;
-    //std::cout << ss.str() << std::endl;
+	//std::stringstream ss;	
+	//ss << "eventloop create threadid = " << threadId_;
+	//std::cout << ss.str() << std::endl;
 }
 
 EventLoop::~EventLoop()
@@ -108,31 +113,33 @@ void EventLoop::loop()
         timerQueue_->doTimer();
 
         activeChannels_.clear();
-        pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_);
-        //if (Logger::logLevel() <= Logger::TRACE)
-        //{
-        printActiveChannels();
-        //}
+        LOGD("EventpLoop::loop() iteration %d", iteration_);
+		pollReturnTime_ = poller_->poll(kPollTimeMs, &activeChannels_);
+		//if (Logger::logLevel() <= Logger::TRACE)
+		//{
+			printActiveChannels();
+		//}
         ++iteration_;
-        // TODO sort channel by priority
-        eventHandling_ = true;
-        for (const auto& it : activeChannels_)
-        {
-            currentActiveChannel_ = it;
-            currentActiveChannel_->handleEvent(pollReturnTime_);
-        }
-        currentActiveChannel_ = nullptr;
-        eventHandling_ = false;
-        doPendingFunctors();
+		// TODO sort channel by priority
+		eventHandling_ = true;
+		for (const auto& it : activeChannels_)
+		{
+			currentActiveChannel_ = it;
+            LOGD("EventLoop::loop activechannel handlevent!");
+			currentActiveChannel_->handleEvent(pollReturnTime_);
+		}
+		currentActiveChannel_ = nullptr;
+		eventHandling_ = false;
+		doPendingFunctors();
 
-        if (frameFunctor_)
-        {
-            frameFunctor_();
-        }
-    }
+		if (frameFunctor_)
+		{
+			frameFunctor_();
+		}		
+	}
 
-    LOGD("EventLoop 0x%0x stop looping", this);
-    looping_ = false;
+	LOGD("EventLoop 0x%0x stop looping", this);
+	looping_ = false;  
 
 
     std::ostringstream oss;
@@ -143,39 +150,43 @@ void EventLoop::loop()
 
 void EventLoop::quit()
 {
-    quit_ = true;
-    // There is a chance that loop() just executes while(!quit_) and exists,
-    // then EventLoop destructs, then we are accessing an invalid object.
-    // Can be fixed using mutex_ in both places.
-    if (!isInLoopThread())
-    {
-        wakeup();
-    }
+	quit_ = true;
+	// There is a chance that loop() just executes while(!quit_) and exists,
+	// then EventLoop destructs, then we are accessing an invalid object.
+	// Can be fixed using mutex_ in both places.
+	if (!isInLoopThread())
+	{
+	    LOGD("EventLoop::quit() wakeup() is called!");
+		wakeup();
+	}
 }
 
 void EventLoop::runInLoop(const Functor& cb)
 {
-    if (isInLoopThread())
-    {
-        cb();
-    }
-    else
-    {
-        queueInLoop(cb);
-    }
+	if (isInLoopThread())
+	{
+	    LOGD("callback are called directly");
+		cb();
+	}
+	else
+	{
+	    LOGD("callback are queued in loop");
+		queueInLoop(cb);
+	}
 }
 
 void EventLoop::queueInLoop(const Functor& cb)
 {
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        pendingFunctors_.push_back(cb);
-    }
+	{
+		std::unique_lock<std::mutex> lock(mutex_);
+		pendingFunctors_.push_back(cb);
+	}
 
-    if (!isInLoopThread() || callingPendingFunctors_)
-    {
-        wakeup();
-    }
+	if (!isInLoopThread() || callingPendingFunctors_)
+	{
+	    LOGD("EventLoop::wakeup() is called!");
+		wakeup();
+	}
 }
 
 void EventLoop::setFrameFunctor(const Functor& cb)
@@ -231,7 +242,9 @@ void EventLoop::remove(TimerId timerId)
 
 bool EventLoop::updateChannel(Channel* channel)
 {
-    //assert(channel->ownerLoop() == this);
+
+    LOGD("EventLoop::updateChannel in!!");
+	//assert(channel->ownerLoop() == this);
     if (channel->ownerLoop() != this)
         return false;
 
@@ -301,6 +314,7 @@ bool EventLoop::createWakeupfd()
     //serveraddr.sin_family = AF_INET;
     //serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     //serveraddr.sin_port = htons(INNER_WAKEUP_LISTEN_PORT);   
+    LOGD("connect to monitor!!!");
     if (::connect(wakeupFdSend_, (struct sockaddr*) & serveraddr, sizeof(serveraddr)) < 0)
     {
         //让程序挂掉
@@ -345,16 +359,18 @@ void EventLoop::abortNotInLoopThread()
 
 bool EventLoop::wakeup()
 {
-    uint64_t one = 1;
+
+    LOGD("EventLoop::wakup in, write(%d)", wakeupFd_);
+	uint64_t one = 1;
 #ifdef WIN32
     int32_t n = sockets::write(wakeupFdSend_, &one, sizeof(one));
 #else
     int32_t n = sockets::write(wakeupFd_, &one, sizeof(one));
 #endif
 
-
-    if (n != sizeof one)
-    {
+    
+	if (n != sizeof one)    // 啥意思
+	{
 #ifdef WIN32
         DWORD error = WSAGetLastError();
         LOGSYSE("EventLoop::wakeup() writes %d  bytes instead of 8, fd: %d, error: %d", n, wakeupFdSend_, (int32_t)error);
@@ -370,9 +386,12 @@ bool EventLoop::wakeup()
     return true;
 }
 
+// 这个handleRead是干嘛的，并没有readcallback函数？
 bool EventLoop::handleRead()
 {
-    uint64_t one = 1;
+
+    LOGD("EventLoop::handleRead in!!");
+	uint64_t one = 1;
 #ifdef WIN32
     int32_t n = sockets::read(wakeupFdRecv_, &one, sizeof(one));
 #else

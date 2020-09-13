@@ -17,10 +17,12 @@ ChatServer::ChatServer()
 
 bool ChatServer::init(const char* ip, short port, EventLoop* loop)
 {   
+    LOGI("chat server init!!!");
     InetAddress addr(ip, port);
     m_server.reset(new TcpServer(loop, addr, "FLAMINGO-SERVER", TcpServer::kReusePort));
-    m_server->setConnectionCallback(std::bind(&ChatServer::onConnected, this, std::placeholders::_1));
-    //启动侦听
+    LOGD("set tcpserver::connectioncallback as Chatserver::onConnection");
+    m_server->setConnectionCallback(std::bind(&ChatServer::OnConnection, this, std::placeholders::_1));
+    //启动侦听, 6个线程
     m_server->start(6);
 
     return true;
@@ -44,12 +46,15 @@ bool ChatServer::isLogPackageBinaryEnabled()
 
 void ChatServer::onConnected(std::shared_ptr<TcpConnection> conn)
 {
+    LOGD("ChatServer::OnConnection in!!");
     if (conn->connected())
     {
         LOGD("client connected: %s", conn->peerAddress().toIpPort().c_str());
         ++m_sessionId;
         std::shared_ptr<ChatSession> spSession(new ChatSession(conn, m_sessionId));
-        conn->setMessageCallback(std::bind(&ChatSession::onRead, spSession.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));       
+        LOGD("set connection messagecallback as ChatSession::OnRead");
+        conn->setMessageCallback(std::bind(&ChatSession::OnRead, spSession.get(), \
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
         std::lock_guard<std::mutex> guard(m_sessionMutex);
         m_sessions.push_back(spSession);

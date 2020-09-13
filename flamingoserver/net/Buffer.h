@@ -434,13 +434,13 @@ namespace net
 
 		const char* begin() const
 		{
-			return &*buffer_.begin();
+			return &*buffer_.begin(); //为什么要这样？
 		}
 
 		void makeSpace(size_t len)
 		{
 			//kCheapPrepend为保留的空间
-            if (writableBytes() + prependableBytes() < len + kCheapPrepend)
+            if (writableBytes() + prependableBytes() < len + kCheapPrepend) // prependablebytes不是等于kcheapprepend吗？
 			{
 				// FIXME: move readable data
 				buffer_.resize(writerIndex_ + len);

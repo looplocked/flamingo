@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-#define DEFAULT_TEAMNAME _T("My Friends")
+#define DEFAULT_TEAMNAME _T("My Friends")  // 为什么不要空格？
 
 //客户端类型
 enum CLIENT_TYPE

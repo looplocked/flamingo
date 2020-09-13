@@ -14,6 +14,7 @@ using namespace net;
 
 void net::defaultConnectionCallback(const TcpConnectionPtr& conn)
 {
+    LOGD("defaultConnectionCallback is called");
     LOGD("%s -> is %s",
         conn->localAddress().toIpPort().c_str(),
         conn->peerAddress().toIpPort().c_str(),
@@ -23,6 +24,7 @@ void net::defaultConnectionCallback(const TcpConnectionPtr& conn)
 
 void net::defaultMessageCallback(const TcpConnectionPtr&, Buffer* buf, Timestamp)
 {
+    LOGD("defaultmessagecallback is called");
     buf->retrieveAll();
 }
 
@@ -36,6 +38,10 @@ TcpConnection::TcpConnection(EventLoop* loop, const string& nameArg, int sockfd,
     peerAddr_(peerAddr),
     highWaterMark_(64 * 1024 * 1024)
 { 
+    LOGD("TcpConnection construct in, new socket and channel are created, \
+channel::readcallback are set to TcpConnection::handleRead \
+channel::writecallback are set to TcpConnection::handleWrite \
+channel::Closecallback are set to TcpConnection::handleClose ");
     channel_->setReadCallback(std::bind(&TcpConnection::handleRead, this, std::placeholders::_1));
     channel_->setWriteCallback(std::bind(&TcpConnection::handleWrite, this));
     channel_->setCloseCallback(std::bind(&TcpConnection::handleClose, this));
@@ -154,6 +160,7 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
             remaining = len - nwrote;
             if (remaining == 0 && writeCompleteCallback_)
             {
+            	LOGD("Writecompletecallback called!");
                 loop_->queueInLoop(std::bind(writeCompleteCallback_, shared_from_this()));
             }
         }
@@ -282,6 +289,7 @@ void TcpConnection::setTcpNoDelay(bool on)
 
 void TcpConnection::connectEstablished()
 {
+    LOGD("TcpConnection::connectionEstablished in!!");
     loop_->assertInLoopThread();
     if (state_ != kConnecting)
     {
@@ -302,6 +310,7 @@ void TcpConnection::connectEstablished()
     }
 
     //connectionCallback_指向void XXServer::OnConnection(const std::shared_ptr<TcpConnection>& conn)
+    LOGD("TcpConnection::connectioncallback is called!");
     connectionCallback_(shared_from_this());
 }
 
@@ -312,7 +321,7 @@ void TcpConnection::connectDestroyed()
     {
         setState(kDisconnected);
         channel_->disableAll();
-
+        // 这里为什么要调用conectionCallback
         connectionCallback_(shared_from_this());
     }
     channel_->remove();
@@ -320,16 +329,19 @@ void TcpConnection::connectDestroyed()
 
 void TcpConnection::handleRead(Timestamp receiveTime)
 {
+    LOGD("TcpConnection::handleRead in!!");
     loop_->assertInLoopThread();
     int savedErrno = 0;
     int32_t n = inputBuffer_.readFd(channel_->fd(), &savedErrno);
     if (n > 0)
     {
         //messageCallback_指向CTcpSession::OnRead(const std::shared_ptr<TcpConnection>& conn, Buffer* pBuffer, Timestamp receiveTime)
+        LOGD("TcpConnection::MessageCallback called!");
         messageCallback_(shared_from_this(), &inputBuffer_, receiveTime);
     }
     else if (n == 0)
     {
+        LOGD("TcpConnection::handleRead, read nothing, call handleClose()");
         handleClose();
     }
     else
@@ -345,6 +357,7 @@ void TcpConnection::handleWrite()
     loop_->assertInLoopThread();
     if (channel_->isWriting())
     {
+    	//why use sockets to write?
         int32_t n = sockets::write(channel_->fd(), outputBuffer_.peek(), outputBuffer_.readableBytes());
         if (n > 0)
         {
@@ -395,6 +408,7 @@ void TcpConnection::handleClose()
     channel_->disableAll();
 
     TcpConnectionPtr guardThis(shared_from_this());
+    // 这里为什么要调用connectionCallback
     connectionCallback_(guardThis);
     // must be the last line
     closeCallback_(guardThis);

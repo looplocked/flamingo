@@ -6,6 +6,7 @@
 #include "EventLoop.h"
 #include "EventLoopThread.h"
 #include "Callbacks.h"
+#include "../base/AsyncLog.h"
 
 using namespace net;
 
@@ -16,6 +17,7 @@ EventLoopThreadPool::EventLoopThreadPool()
     numThreads_(0),
     next_(0)
 {
+	LOGD("Eventloopthreadpool contructor!");
 }
 
 EventLoopThreadPool::~EventLoopThreadPool()
@@ -25,12 +27,14 @@ EventLoopThreadPool::~EventLoopThreadPool()
 
 void EventLoopThreadPool::init(EventLoop* baseLoop, int numThreads)
 {
-    numThreads_ = numThreads;
-    baseLoop_ = baseLoop;
+    LOGD("EventLoopThreadPool::Init!!");
+	numThreads_ = numThreads;
+	baseLoop_ = baseLoop;
 }
 
 void EventLoopThreadPool::start(const ThreadInitCallback& cb)
 {
+    LOGD("EventLoopThreadPool::start");
     //assert(baseLoop_);
     if (baseLoop_ == NULL)
         return;

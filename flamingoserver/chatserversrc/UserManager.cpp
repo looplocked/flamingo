@@ -57,7 +57,8 @@ bool UserManager::loadUsersFromDb()
     }
 
     //TODO: 到底是空数据集还是出错，需要修改下返回类型
-    QueryResult* pResult = pConn->query("SELECT f_user_id, f_username, f_nickname, f_password,  f_facetype, f_customface, f_gender, f_birthday, f_signature, f_address, f_phonenumber, f_mail, f_teaminfo FROM t_user ORDER BY  f_user_id DESC");
+    QueryResult* pResult = pConn->Query("SELECT f_user_id, f_username, f_nickname, f_password,  f_facetype, f_customface,\
+    f_gender, f_birthday, f_signature, f_address, f_phonenumber, f_mail, f_teaminfo FROM t_user ORDER BY  f_user_id DESC");
     if (NULL == pResult)
     {
         LOGI("UserManager::_Query error, dbname: %s", m_strDbName.c_str());

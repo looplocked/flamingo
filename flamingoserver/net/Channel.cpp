@@ -75,6 +75,7 @@ bool Channel::disableAll()
 
 bool Channel::update()
 {
+    LOGD("Channel::update in!!");
 	//addedToLoop_ = true;
 	return loop_->updateChannel(this);
 }
@@ -106,6 +107,7 @@ void Channel::handleEvent(Timestamp receiveTime)
 
 void Channel::handleEventWithGuard(Timestamp receiveTime)
 {
+    LOGD("handlerEventWithGuard in!!!, fd is %d", fd_);
 	//eventHandling_ = true;
     /*
     XPOLLIN ，读事件
@@ -129,7 +131,10 @@ void Channel::handleEventWithGuard(Timestamp receiveTime)
 		{
 			LOGW("Channel::handle_event() XPOLLHUP");
 		}
-		if (closeCallback_) closeCallback_();
+		if (closeCallback_) {
+            LOGD("Channel::closeCallback being called!");
+            closeCallback_();
+          }
 	}
 
 	if (revents_ & XPOLLNVAL)
@@ -147,15 +152,19 @@ void Channel::handleEventWithGuard(Timestamp receiveTime)
 	{
 		//当是侦听socket时，readCallback_指向Acceptor::handleRead
         //当是客户端socket时，调用TcpConnection::handleRead 
-        if (readCallback_) 
+        if (readCallback_) {
+            LOGD("Channel::readCallback being called!");
             readCallback_(receiveTime);
+        }
 	}
 
 	if (revents_ & XPOLLOUT)
 	{
 		//如果是连接状态服的socket，则writeCallback_指向Connector::handleWrite()
-        if (writeCallback_) 
+        if (writeCallback_) {
+            LOGD("Channel::writeCallback being called!");
             writeCallback_();
+        }
 	}
 	//eventHandling_ = false;
 }

@@ -2,12 +2,15 @@ cmake_minimum_required(VERSION 2.6)
 
 project (FLAMGINGO_SERVER)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -g -Wall -O0 -Wno-unused-variable -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -g3 -Wall -O2 -Wno-unused-variable -pthread")
 
 link_directories(
     ${PROJECT_SOURCE_DIR}/lib
-	/usr/lib64/mysql/
+	/usr/lib/x86_64-linux-gnu/
 )
+
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
 
 # 推荐使用 CentOS 7.0 及以上系统
 # CentOS 7.0 及以上系统默认安装的是mariadb，安装方法
@@ -15,7 +18,7 @@ link_directories(
 # CentOS 7.0 以下系统默认安装mysql，安装方法：
 # yum install mysql-server mysql mysql-devel
 
-find_library(MYSQL_LIB libmysqlclient.so /usr/lib64/mysql/)
+find_library(MYSQL_LIB libmysqlclient.so /usr/lib/x86_64-linux-gnu/)
 #如果你的数据库是mariadb，你还需要安装mariadb-devel库；如果你的数据库是mysql，你需要安装mysql-devel，否则会出现如下错误提示。
 IF (NOT MYSQL_LIB)
     MESSAGE(FATAL_ERROR "mysqlclient not found. If your mysql is mariadb, please install mariadb-devel otherwise install mysql-devel.")
@@ -30,7 +33,7 @@ base/Timestamp.cpp
 net/Acceptor.cpp
 net/Buffer.cpp
 net/Channel.cpp
-net/Connector.cpp
+#net/Connector.cpp
 net/EpollPoller.cpp
 net/EventLoop.cpp
 net/EventLoopThread.cpp
@@ -41,7 +44,7 @@ net/PollPoller.cpp
 net/ProtocolStream.cpp
 net/SelectPoller.cpp
 net/Sockets.cpp
-net/TcpClient.cpp
+#net/TcpClient.cpp
 net/TcpConnection.cpp
 net/TcpServer.cpp
 net/Timer.cpp
@@ -120,6 +123,9 @@ fileserversrc/FileSession.cpp
 fileserversrc/FileManager.cpp
 fileserversrc/TcpSession.cpp)
 
+set(test_srcs
+UT/main.cpp)
+
 
 add_executable(chatserver ${net_srcs} ${json_srcs}  ${chatserver_srcs} ${mysqlapi_srcs} ${mysqlmgr_srcs} ${zlib_srcs} ${utils_srcs})
 #光包含库目录是没用的，还必须使用TARGET_LINK_LIBRARIES链接该库
@@ -130,3 +136,11 @@ TARGET_LINK_LIBRARIES(fileserver)
 
 add_executable(imgserver ${net_srcs}  ${imgserver_srcs} ${utils_srcs})
 TARGET_LINK_LIBRARIES(imgserver)
+
+add_executable(alltests ${net_srcs} ${json_srcs}  ${chatserver_srcs} ${test_srcs} ${mysqlapi_srcs} ${mysqlmgr_srcs} ${zlib_srcs} ${utils_srcs})
+#光包含库目录是没用的，还必须使用TARGET_LINK_LIBRARIES链接该库
+TARGET_LINK_LIBRARIES(alltests mysqlclient)
+target_link_libraries(alltests ${GTEST_BOTH_LIBRARIES})
+target_link_libraries(alltests ${CMAKE_THREAD_LIBS_INIT})
+add_test(Test alltests)
+enable_testing()

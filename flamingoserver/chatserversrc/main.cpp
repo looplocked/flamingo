@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
     DIR* dp = opendir(logfilepath);
     if (dp == NULL)
     {
-        if (mkdir(logfilepath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0)
+        if (mkdir(logfilepath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0)  // 这些信号什么意思
         {
             LOGF("create base dir error, %s , errno: %d, %s", logfilepath, errno, strerror(errno));
             return 1;
@@ -146,9 +146,9 @@ int main(int argc, char* argv[])
     const char* monitortoken = config.getConfigName("monitortoken");
     Singleton<MonitorServer>::Instance().init(monitorlistenip, monitorlistenport, &g_mainLoop, monitortoken);
 
-    const char* httplistenip = config.getConfigName("monitorlistenip");
-    short httplistenport = (short)atol(config.getConfigName("httplistenport"));
-    Singleton<HttpServer>::Instance().init(httplistenip, httplistenport, &g_mainLoop);
+    const char* httplistenip = config.GetConfigName("httplistenip");
+    short httplistenport = (short)atol(config.GetConfigName("httplistenport"));
+    Singleton<HttpServer>::Instance().Init(httplistenip, httplistenport, &g_mainLoop);
 
     LOGI("chatserver initialization completed, now you can use client to connect it.");
 

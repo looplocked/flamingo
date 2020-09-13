@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 #ifdef WIN32
     CConfigFileReader config("../etc/imgserver.conf");
 #else
-    CConfigFileReader config("etc/imgserver.conf");
+    CConfigFileReader config("../etc/imgserver.conf");
 #endif
 
     std::string logFileFullPath;

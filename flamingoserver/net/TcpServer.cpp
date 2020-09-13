@@ -27,6 +27,7 @@ TcpServer::TcpServer(EventLoop* loop,
     started_(0),
     nextConnId_(1)
 {
+    LOGD("set acceptor::connectioncallback as TcpServer::newConnection");
     acceptor_->setNewConnectionCallback(std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -46,6 +47,7 @@ TcpServer::~TcpServer()
 
 void TcpServer::start(int workerThreadCount/* = 4*/)
 {
+    LOGD("TcpServer::start!!, Thread count is %d", workerThreadCount);
     if (started_ == 0)
     {
         eventLoopThreadPool_.reset(new EventLoopThreadPool());
@@ -54,6 +56,9 @@ void TcpServer::start(int workerThreadCount/* = 4*/)
         
         //threadPool_->start(threadInitCallback_);
         //assert(!acceptor_->listenning());
+        LOGD("Acceptor::listen run in loop");
+        // TcpServer不曾拥有过Acceptor，却能调用Acceptor的成员函数，值得注意！
+        // listen中会调用enablereading,从而将acceptor::channel添加进mainloop的poll中
         loop_->runInLoop(std::bind(&Acceptor::listen, acceptor_.get()));
         started_ = 1;
     }
@@ -79,6 +84,7 @@ void TcpServer::stop()
 
 void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
 {
+    LOGD("TcpServer::newConnection in!!!");
     loop_->assertInLoopThread();
     EventLoop* ioLoop = eventLoopThreadPool_->getNextLoop();
     char buf[32];
@@ -93,11 +99,18 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
     // FIXME use make_shared if necessary
     TcpConnectionPtr conn(new TcpConnection(ioLoop, connName, sockfd, localAddr, peerAddr));
     connections_[connName] = conn;
+    LOGD("new connection set callback start!");
+    // 这里指向ChatServer::OnConnection，有实际内容
     conn->setConnectionCallback(connectionCallback_);
+    // 这里只是传入一个空的函数指针，真正的函数内容在ChatServer::OnConnection被调用时传入
     conn->setMessageCallback(messageCallback_);
+    // 此处似乎无用，反正后面调用connectionCallback也会指向OnRead
     conn->setWriteCompleteCallback(writeCompleteCallback_);
     conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, std::placeholders::_1)); // FIXME: unsafe
     //该线程分离完io事件后，立即调用TcpConnection::connectEstablished
+    LOGD("TcpConnection::connectEstablished run in ioloop, ioloop is 0x%x", ioLoop);
+    // 此处这个runInLoop是在主线程中运行，只有在判断到主线程号与loop线程号对不上，才丢进另一个线程处理
+    // connectEstablished会调用connectionCallback，进而调用onConnection，将conn的messageCallback指向实际的XXSession::onRead
     ioLoop->runInLoop(std::bind(&TcpConnection::connectEstablished, conn));
 }
 

@@ -14,6 +14,7 @@
 
 bool MonitorServer::init(const char* ip, short port, EventLoop* loop, const char* token)
 {
+    LOGI("MonitorServer init");
     m_token = token;
      
     InetAddress addr(ip, port);
@@ -34,10 +35,12 @@ void MonitorServer::uninit()
 //新连接到来调用或连接断开，所以需要通过conn->connected()来判断，一般只在主loop里面调用
 void MonitorServer::onConnected(std::shared_ptr<TcpConnection> conn)
 {
+    LOGD("MonitorServer::OnConnection in!!");
     if (conn->connected())
     {
         std::shared_ptr<MonitorSession> spSession(new MonitorSession(conn));
-        conn->setMessageCallback(std::bind(&MonitorSession::onRead, spSession.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        conn->setMessageCallback(std::bind(&MonitorSession::OnRead, spSession.get(), \
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
         {
             std::lock_guard<std::mutex> guard(m_sessionMutex);

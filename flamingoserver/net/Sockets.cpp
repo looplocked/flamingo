@@ -297,7 +297,8 @@ void sockets::setReusePort(SOCKET sockfd, bool on)
 
 SOCKET sockets::connect(SOCKET sockfd, const struct sockaddr_in& addr)
 {
-    return ::connect(sockfd, sockaddr_cast(&addr), static_cast<socklen_t>(sizeof addr));
+    LOGD("connect is called!");
+	return ::connect(sockfd, sockaddr_cast(&addr), static_cast<socklen_t>(sizeof addr));
 }
 
 int32_t sockets::read(SOCKET sockfd, void* buf, int32_t count)
@@ -318,6 +319,7 @@ ssize_t sockets::readv(SOCKET sockfd, const struct iovec* iov, int iovcnt)
 
 int32_t sockets::write(SOCKET sockfd, const void* buf, int32_t count)
 {
+    LOGD("write is called!");
 #ifdef WIN32
     return ::send(sockfd, (const char*)buf, count, 0);
 #else

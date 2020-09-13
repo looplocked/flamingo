@@ -33,6 +33,7 @@ m_id(sessionid),
 m_seq(0),
 m_isLogin(false)
 {
+    LOGD("ChatSession construct in!");
 	m_userinfo.userid = 0;
     m_lastPackageTime = time(NULL);
 
@@ -54,6 +55,7 @@ ChatSession::~ChatSession()
 
 void ChatSession::onRead(const std::shared_ptr<TcpConnection>& conn, Buffer* pBuffer, Timestamp receivTime)
 {
+    LOGD("ChatSession::OnRead in!!");
     while (true)
     {
         //不够一个包头大小

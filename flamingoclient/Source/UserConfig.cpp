@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "UserConfig.h"
 #include "IniFile.h"
-
+// _T("Hello")是一个宏,他的作用是让你的程序支持Unicode编码
 CUserConfig::CUserConfig() : m_strFontName(_T("微软雅黑"))
 {
 	m_bMute = FALSE;
